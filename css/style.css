@@ -240,7 +240,7 @@ body {
   height: var(--marginSpace);
 
   font-family: 'Gilroy-Bold';
-  font-size: 48px;
+  font-size: 34px;
 
   transition: 0.3s ease-in-out;
 }
@@ -295,6 +295,19 @@ body {
   flex-direction: column;
 
   width: 960px;
+}
+.experienciasContainer {
+  width: calc(100% - 20%);
+  height: auto;
+  margin-left: 10%;
+  color: var(--corTexto);
+  font-family: 'Gilroy-Bold';
+}
+.cargo {
+  margin: 10px 0px;
+}
+.atividades {
+  font-family: 'Gilroy-Regular';
 }
 .aboutTitle {
   margin-top: 40px;
