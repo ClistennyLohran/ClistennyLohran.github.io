@@ -5,25 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0d16">
 <title>Trovão Procedural — Lohran BM</title>
-<meta name="description" content="Gerador procedural de som de trovão realista: controle distância, volume, duração e intensidade. Síntese em tempo real no navegador, sem áudio gravado.">
-<meta name="keywords" content="trovão, som procedural, web audio api, síntese de áudio, thunder generator">
+<meta name="description" content="Gerador procedural de trovão, chuva e vento: controle distância, tipo, intensidade, duração e modo automático. Síntese em tempo real no navegador, sem áudio gravado.">
+<meta name="keywords" content="trovão, som procedural, web audio api, síntese de áudio, chuva, vento, thunder generator">
 <meta name="author" content="Lohran BM">
 <meta property="og:title" content="Gerador Procedural de Trovão">
-<meta property="og:description" content="Trovão sintetizado do zero no navegador — nenhum arquivo de áudio, só física e matemática.">
+<meta property="og:description" content="Trovão, chuva e vento sintetizados do zero no navegador — nenhum arquivo de áudio, só física e matemática.">
 <link rel="icon" href="../ico/favicon.ico" type="image/x-icon">
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{
-    --bg:#080a11;
-    --bg2:#0e131f;
-    --card:rgba(255,255,255,.045);
-    --line:rgba(255,255,255,.10);
-    --txt:#e9edf7;
-    --dim:#98a2bb;
-    --acc:#7cc4ff;
-    --acc2:#c9a7ff;
-    --warn:#ffd68a;
-    --r:16px;
+    --bg:#080a11; --bg2:#0e131f;
+    --card:rgba(255,255,255,.045); --line:rgba(255,255,255,.10);
+    --txt:#e9edf7; --dim:#98a2bb;
+    --acc:#7cc4ff; --acc2:#c9a7ff; --warn:#ffd68a; --r:16px;
   }
   html,body{height:100%}
   body{
@@ -31,103 +25,79 @@
       radial-gradient(120% 80% at 50% -10%, #1b2440 0%, transparent 60%),
       radial-gradient(90% 60% at 80% 10%, #2a1f45 0%, transparent 55%),
       linear-gradient(180deg,var(--bg2),var(--bg) 55%);
-    background-attachment:fixed;
-    color:var(--txt);
+    background-attachment:fixed; color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;
-    line-height:1.5;
-    padding:env(safe-area-inset-top) 0 calc(24px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    padding:env(safe-area-inset-top) 0 calc(28px + env(safe-area-inset-bottom));
     overflow-x:hidden;
   }
   .wrap{max-width:640px;margin:0 auto;padding:18px 16px 0}
-  header{text-align:center;margin-bottom:18px}
+  header{text-align:center;margin-bottom:16px}
   h1{font-size:clamp(22px,6vw,30px);font-weight:800;letter-spacing:-.02em;line-height:1.15}
   h1 span{background:linear-gradient(92deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
   .sub{color:var(--dim);font-size:13.5px;margin-top:6px}
 
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;backdrop-filter:blur(6px)}
 
-  /* ---------- céu / visualizador ---------- */
-  .sky{
-    position:relative;height:150px;border-radius:var(--r);overflow:hidden;
-    border:1px solid var(--line);margin-bottom:14px;
-    background:linear-gradient(180deg,#121a2e,#0a0e18 70%,#070a12);
-  }
+  .sky{position:relative;height:148px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);margin-bottom:14px;
+       background:linear-gradient(180deg,#121a2e,#0a0e18 70%,#070a12)}
   #wave{position:absolute;inset:0;width:100%;height:100%;display:block}
   .flash{position:absolute;inset:0;background:#eaf2ff;opacity:0;pointer-events:none;mix-blend-mode:screen}
   .flash.go{animation:fl .62s ease-out}
-  @keyframes fl{
-    0%{opacity:0}4%{opacity:.95}9%{opacity:.15}14%{opacity:.85}
-    22%{opacity:.08}30%{opacity:.55}45%{opacity:.05}100%{opacity:0}
-  }
+  @keyframes fl{0%{opacity:0}4%{opacity:.95}9%{opacity:.15}14%{opacity:.85}22%{opacity:.08}30%{opacity:.55}45%{opacity:.05}100%{opacity:0}}
   .skyTag{position:absolute;left:10px;top:8px;font-size:11px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase}
-  .skyState{position:absolute;right:10px;top:8px;font-size:11px;color:var(--acc);font-variant-numeric:tabular-nums}
+  .skyState{position:absolute;right:10px;top:8px;font-size:11px;color:var(--acc);font-variant-numeric:tabular-nums;text-align:right}
 
-  /* ---------- controles ---------- */
-  .ctrl{margin-bottom:20px}
-  .ctrl:last-child{margin-bottom:4px}
-  .lab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:9px}
+  .ctrl{margin-bottom:18px}
+  .ctrl:last-child{margin-bottom:2px}
+  .lab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
   .lab b{font-size:14.5px;font-weight:650}
   .lab .val{font-size:14px;color:var(--acc);font-variant-numeric:tabular-nums;font-weight:650}
-  .hint{font-size:11.5px;color:var(--dim);margin-top:7px;min-height:14px}
+  .hint{font-size:11.5px;color:var(--dim);margin-top:6px;min-height:14px}
 
-  input[type=range]{
-    -webkit-appearance:none;appearance:none;width:100%;height:34px;background:transparent;display:block;
-  }
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:34px;background:transparent;display:block}
   input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--acc) var(--p,50%),rgba(255,255,255,.13) var(--p,50%))}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-9px;border-radius:50%;background:#fff;border:0;box-shadow:0 2px 10px rgba(0,0,0,.6)}
   input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:rgba(255,255,255,.13)}
   input[type=range]::-moz-range-progress{height:8px;border-radius:99px;background:var(--acc)}
   input[type=range]::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:0}
 
-  /* ---------- botões ---------- */
-  .play{
-    width:100%;border:0;border-radius:18px;padding:20px 16px;font:800 19px/1.2 inherit;color:#06121f;
-    background:linear-gradient(100deg,#8ed0ff,#b9a6ff);
-    box-shadow:0 10px 28px rgba(110,160,255,.28);cursor:pointer;
-    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
-    transition:transform .08s ease, filter .2s ease;
-  }
+  .play{width:100%;border:0;border-radius:18px;padding:20px 16px;font:800 19px/1.2 inherit;color:#06121f;
+        background:linear-gradient(100deg,#8ed0ff,#b9a6ff);box-shadow:0 10px 28px rgba(110,160,255,.28);
+        cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform .08s ease,filter .2s ease}
   .play:active{transform:scale(.985)}
-  .play[disabled]{filter:grayscale(.5) brightness(.75);cursor:default}
+  .play[disabled]{filter:grayscale(.5) brightness(.75)}
   .row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
-  .row .btn{flex:1 1 0;min-width:120px}
-  .btn{
-    border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt);
-    border-radius:12px;padding:13px 12px;font:600 13.5px/1 inherit;cursor:pointer;
-    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
-  }
+  .row .btn{flex:1 1 0;min-width:110px}
+  .btn{border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt);border-radius:12px;
+       padding:13px 12px;font:600 13.5px/1 inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .btn:active{background:rgba(255,255,255,.11)}
   .btn.on{border-color:var(--acc);color:var(--acc);background:rgba(124,196,255,.12)}
 
   .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .chips::-webkit-scrollbar{display:none}
-  .chip{
-    flex:0 0 auto;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt);
-    border-radius:99px;padding:9px 15px;font:600 13px/1 inherit;cursor:pointer;white-space:nowrap;
-    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
-  }
+  .chip{flex:0 0 auto;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt);border-radius:99px;
+        padding:9px 15px;font:600 13px/1 inherit;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   .chip:active{background:rgba(255,255,255,.12)}
+  .chip.on{border-color:var(--acc2);color:var(--acc2);background:rgba(201,167,255,.14)}
 
   .seedRow{display:flex;gap:10px;align-items:center}
-  .seedRow input[type=text]{
-    flex:1;min-width:0;background:rgba(0,0,0,.3);border:1px solid var(--line);color:var(--txt);
-    border-radius:12px;padding:12px;font:600 14px/1 inherit;font-variant-numeric:tabular-nums;
-  }
+  .seedRow input[type=text]{flex:1;min-width:0;background:rgba(0,0,0,.3);border:1px solid var(--line);color:var(--txt);
+    border-radius:12px;padding:12px;font:600 14px/1 inherit;font-variant-numeric:tabular-nums}
   .seedRow input:focus{outline:none;border-color:var(--acc)}
 
-  h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;font-weight:700}
-  details{border-top:1px solid var(--line);padding-top:14px;margin-top:4px}
+  h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;font-weight:700;
+     display:flex;justify-content:space-between;align-items:center;gap:10px}
+  h2 em{font-style:normal;text-transform:none;letter-spacing:0;color:var(--warn);font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  details{border-top:1px solid var(--line);padding-top:14px}
   summary{cursor:pointer;font-size:13.5px;font-weight:650;color:var(--acc);list-style:none}
   summary::-webkit-details-marker{display:none}
-  summary::after{content:" ▾"}
-  details[open] summary::after{content:" ▴"}
+  summary::after{content:" ▾"} details[open] summary::after{content:" ▴"}
   details p{font-size:13px;color:var(--dim);margin-top:10px}
   details li{font-size:13px;color:var(--dim);margin:6px 0 0 18px}
   code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--warn)}
   footer{text-align:center;color:var(--dim);font-size:12px;padding:18px 0 6px}
   footer a{color:var(--acc);text-decoration:none}
-  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
 <body>
@@ -135,7 +105,7 @@
 
   <header>
     <h1>Gerador de <span>Trovão</span> Procedural</h1>
-    <p class="sub">Nenhum arquivo de áudio. Cada trovão é sintetizado do zero a partir de um modelo físico do canal do raio.</p>
+    <p class="sub">Trovão, chuva e vento sintetizados do zero. Nenhum arquivo de áudio.</p>
   </header>
 
   <div class="sky">
@@ -149,26 +119,32 @@
   <div class="row">
     <button class="btn" id="newBolt">🎲 Novo raio</button>
     <button class="btn" id="stop">■ Parar</button>
-    <button class="btn" id="dl">⬇ Baixar WAV</button>
+    <button class="btn" id="dl">⬇ WAV</button>
   </div>
 
   <div class="card" style="margin-top:14px">
-    <h2>Predefinições</h2>
-    <div class="chips" id="presets"></div>
+    <h2>Cenas prontas</h2>
+    <div class="chips" id="scenes"></div>
   </div>
 
   <div class="card">
-    <h2>Controles</h2>
+    <h2>Tipo de trovão</h2>
+    <div class="chips" id="types"></div>
+    <div class="hint" id="typeH" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Trovão</h2>
 
     <div class="ctrl">
       <label class="lab" for="dist"><b>Distância</b><span class="val" id="distV"></span></label>
-      <input type="range" id="dist" min="0" max="1000" value="330">
+      <input type="range" id="dist" min="0" max="1000" value="433">
       <div class="hint" id="distH"></div>
     </div>
 
     <div class="ctrl">
       <label class="lab" for="inten"><b>Intensidade</b><span class="val" id="intenV"></span></label>
-      <input type="range" id="inten" min="1" max="10" step="1" value="7">
+      <input type="range" id="inten" min="1" max="10" step="1" value="8">
       <div class="hint" id="intenH"></div>
     </div>
 
@@ -186,50 +162,79 @@
   </div>
 
   <div class="card">
+    <h2>Modo automático <em id="autoNext"></em></h2>
+    <div class="row" style="margin-top:0">
+      <button class="btn" id="tAuto">▶ Tocar sozinho</button>
+      <button class="btn" id="tVary">🎛 Variar cada raio</button>
+    </div>
+
+    <div class="ctrl" style="margin-top:18px">
+      <label class="lab" for="gapMin"><b>Intervalo mínimo</b><span class="val" id="gapMinV"></span></label>
+      <input type="range" id="gapMin" min="2" max="180" value="30">
+    </div>
+    <div class="ctrl">
+      <label class="lab" for="gapMax"><b>Intervalo máximo</b><span class="val" id="gapMaxV"></span></label>
+      <input type="range" id="gapMax" min="2" max="180" value="50">
+      <div class="hint" id="gapH"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Ambiente</h2>
+
+    <div class="ctrl">
+      <label class="lab" for="rain"><b>Chuva</b><span class="val" id="rainV"></span></label>
+      <input type="range" id="rain" min="0" max="100" value="0">
+      <div class="hint" id="rainH"></div>
+    </div>
+
+    <div class="ctrl">
+      <label class="lab" for="wind"><b>Vento</b><span class="val" id="windV"></span></label>
+      <input type="range" id="wind" min="0" max="100" value="0">
+      <div class="hint" id="windH"></div>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Extras</h2>
     <div class="row" style="margin-top:0">
       <button class="btn" id="tFlash">🌩 Relâmpago antes</button>
-      <button class="btn" id="tRain">🌧 Chuva de fundo</button>
     </div>
     <div class="hint" id="flashH" style="margin-top:10px"></div>
     <div class="seedRow" style="margin-top:14px">
       <input type="text" id="seed" inputmode="numeric" aria-label="Semente do raio">
       <button class="btn" id="reseed" style="flex:0 0 auto">🎲</button>
     </div>
-    <div class="hint">A semente define a geometria do raio. A mesma semente + os mesmos controles geram exatamente o mesmo trovão.</div>
+    <div class="hint">A semente define a geometria do raio. Mesma semente + mesmos controles = mesmo trovão.</div>
   </div>
 
   <div class="card">
     <details>
       <summary>Como funciona a síntese</summary>
-      <p>O som é construído por um modelo físico simplificado, executado inteiramente no seu navegador:</p>
-      <li><b>Canal do raio:</b> um caminho tortuoso em 3D, com ramificações, é sorteado da semente. Ele vai do solo até a nuvem.</li>
-      <li><b>Tempos de chegada:</b> cada trecho do canal está a uma distância diferente de você, então seu estrondo chega num instante diferente (<code>t = r / 343 m/s</code>). É isso que transforma um estalo único em um ronco que se estende.</li>
-      <li><b>Onda N:</b> cada trecho emite a onda de choque clássica do trovão (um pulso que salta para cima e decai linearmente até abaixo de zero). Quanto maior a distância percorrida, mais larga fica essa onda — e mais grave o som.</li>
-      <li><b>Absorção do ar:</b> um filtro em cascata remove agudos em função da distância. Perto: estalo seco. Longe: só o grave sobrevive.</li>
-      <li><b>Espalhamento:</b> uma resposta ao impulso gerada na hora (reflexões no terreno e nas nuvens) alonga a cauda conforme a distância cresce.</li>
-      <li><b>Modulação lenta:</b> ondulações aleatórias no volume produzem o "rolar" característico do ronco distante.</li>
-      <p>Tudo é renderizado num <code>OfflineAudioContext</code> e depois tocado — por isso dá para baixar o resultado em WAV.</p>
+      <p>Modelo físico simplificado, rodando inteiro no seu navegador:</p>
+      <li><b>Canal do raio:</b> um caminho tortuoso em 3D com ramificações, sorteado da semente. O tipo de trovão muda a forma dele — vertical e compacto no estrondo, esparramado na horizontal no ronco rolante.</li>
+      <li><b>Tempos de chegada:</b> cada trecho está a uma distância diferente de você, então seu estrondo chega num instante diferente (<code>t = r / 343 m/s</code>). É isso que estica um estalo em ronco.</li>
+      <li><b>Onda N:</b> cada trecho emite a onda de choque do trovão. Ela se alarga conforme viaja, então o pico do espectro desce de ~200 Hz (perto) para ~40 Hz (longe).</li>
+      <li><b>Camada de estalo:</b> o "rasgo" agudo do raio próximo. O ar absorve agudo rápido, então ela some depois de ~2 km — por isso raio perto rasga e raio longe só ronca.</li>
+      <li><b>Pulso de pressão:</b> o estrondo grave que bate no peito, forte só bem perto (cai com <code>1/r^1,15</code>).</li>
+      <li><b>Absorção do ar:</b> filtros que variam no tempo, guiados pela distância média do que está chegando naquele instante.</li>
+      <li><b>Espalhamento:</b> resposta ao impulso gerada na hora (terreno e nuvens) alonga a cauda com a distância.</li>
+      <p>Chuva e vento são bancos de ruído filtrado com gotas esparsas e rajadas lentas — também sem sample nenhum.</p>
     </details>
   </div>
 
-  <footer>
-    Feito por <a href="../">Lohran BM</a> · Web Audio API · sem backend
-  </footer>
+  <footer>Feito por <a href="../">Lohran BM</a> · Web Audio API · sem backend</footer>
 </div>
 
 <script>
 (function(){
 "use strict";
 
-var SPEED = 343;               // velocidade do som (m/s)
-var EAR   = 1.7;               // altura do ouvinte (m)
+var SPEED = 343, EAR = 1.7;
 
-/* ---------------------------------------------------------------- utils */
+/* ---------------------------------------------------------------- util */
 function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
 function lerp(a,b,t){ return a+(b-a)*t; }
-
-// PRNG determinístico (mulberry32)
 function makeRng(seed){
   var s = seed >>> 0;
   return function(){
@@ -240,12 +245,8 @@ function makeRng(seed){
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-/* ------------------------------------------------- mapeamento dos sliders */
-// distância: 0..1000 -> 0.03 km .. 20 km (curva exponencial, resolução fina no perto)
 function sliderToDist(v){ return 0.03 * Math.pow(20/0.03, v/1000); }
-function distToSlider(km){ return Math.round(1000 * Math.log(km/0.03) / Math.log(20/0.03)); }
-
+function distToSlider(km){ return Math.round(1000*Math.log(km/0.03)/Math.log(20/0.03)); }
 function distLabel(km){
   if(km < 0.15) return "em cima de você";
   if(km < 0.6)  return "muito perto";
@@ -254,123 +255,200 @@ function distLabel(km){
   if(km < 11)   return "longe";
   return "no horizonte";
 }
-function fmtDist(km){
-  return km < 1 ? Math.round(km*1000) + " m" : (km<10 ? km.toFixed(1) : Math.round(km)) + " km";
-}
+function fmtDist(km){ return km<1 ? Math.round(km*1000)+" m" : (km<10?km.toFixed(1):Math.round(km))+" km"; }
 
-/* ------------------------------------------------ geometria do canal */
+/* ------------------------------------------------- tipos de trovão ---- */
+/* cada tipo é um conjunto de pesos do mesmo modelo físico, não um preset
+   de sliders: dá para combinar qualquer tipo com qualquer distância.     */
+var TYPES = {
+  estrondo: {nome:"💥 Estrondo",     blast:1.9, crack:1.0, hDec:0.34, str:0.9, tau:1.15, horiz:0.15, tort:0.9, branch:0.8, wet:0.9,
+             desc:"Pulso de pressão grave e curto: o trovão que bate no peito."},
+  estalo:   {nome:"⚡ Estalo seco",  blast:0.9, crack:2.0, hDec:0.5,  str:0.8, tau:0.75, horiz:0.1,  tort:1.3, branch:1.4, wet:0.8,
+             desc:"O rasgo agudo do raio que caiu do lado. Some depois de 2 km."},
+  rolante:  {nome:"🌊 Ronco rolante",blast:0.7, crack:0.5, hDec:1.2,  str:1.5, tau:1.05, horiz:0.85, tort:1.4, branch:1.4, wet:1.25,
+             desc:"Descarga dentro da nuvem, quase horizontal: o ronco que rola e não acaba."},
+  distante: {nome:"🏔 Trovão distante",blast:0.45,crack:0.0, hDec:1.5, str:1.0, tau:1.35, horiz:0.5,  tort:1.0, branch:1.0, wet:1.6,
+             desc:"Só o grave sobrevive à viagem. Sem estalo, muito espalhamento."},
+  multiplo: {nome:"💣 Estouro múltiplo",blast:1.3,crack:1.3,hDec:0.6, str:2.4, tau:1.0,  horiz:0.3,  tort:1.1, branch:1.2, wet:1.0,
+             desc:"Várias descargas de retorno seguidas: estrondo em cima de estrondo."}
+};
+
+/* ------------------------------------------------ geometria do canal -- */
 function buildChannel(p, rnd){
-  var D = p.dist * 1000;
-  var H = p.height;
+  var T = TYPES[p.type];
+  var D = p.dist*1000, H = p.height;
+  var n = Math.round(45 + p.inten*9);
+  var dz = H/n, tort = dz*0.5*T.tort;
   var segs = [];
-  var n = Math.round(45 + p.inten * 9);
-  var dz = H / n;
-  var tort = dz * 0.5;
 
-  var x = D + (rnd()-0.5) * Math.min(D*0.1, 400);
-  var y = (rnd()-0.5) * Math.min(D*0.1, 400);
-  var z = 0;
+  // direção geral do canal: vertical (nuvem-solo) a horizontal (intranuvem)
+  var hz = T.horiz;
+  var baseZ = hz > 0.5 ? 1500 + rnd()*2500 : 0;   // descarga intranuvem começa no alto
+  var dirx = (rnd()-0.5)*2, diry = (rnd()-0.5)*2;
+  var dl = Math.sqrt(dirx*dirx + diry*diry) || 1;
+  dirx /= dl; diry /= dl;
+
+  var x = D + (rnd()-0.5)*Math.min(D*0.1, 400);
+  var y = (rnd()-0.5)*Math.min(D*0.1, 400);
+  var z = baseZ;
 
   for(var i=0;i<n;i++){
     var x0=x, y0=y, z0=z;
-    z += dz * (0.7 + 0.6*rnd());
-    x += (rnd()-0.5) * 2 * tort;
-    y += (rnd()-0.5) * 2 * tort;
+    var step = dz*(0.7 + 0.6*rnd());
+    z += step*(1-hz);
+    x += step*hz*dirx + (rnd()-0.5)*2*tort;
+    y += step*hz*diry + (rnd()-0.5)*2*tort;
+    if(z < 20) z = 20;
 
     var mz = (z+z0)/2;
-    var len = Math.sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0) + (z-z0)*(z-z0));
-    // a corrente de retorno é mais forte perto do solo
-    var e = Math.exp(-mz/(H*0.55)) * (0.55 + 0.9*rnd()) * (len/dz);
+    var len = Math.sqrt((x-x0)*(x-x0)+(y-y0)*(y-y0)+(z-z0)*(z-z0));
+    // a corrente de retorno é mais forte perto do início do canal
+    var e = Math.exp(-(i/n)/T.hDec) * (0.55+0.9*rnd()) * (len/dz);
     segs.push({x:(x+x0)/2, y:(y+y0)/2, z:mz, e:e});
 
-    // ramificações
-    if(rnd() < 0.09 + p.inten*0.012){
-      var bx=x, by=y, bz=z;
-      var nb = 3 + Math.floor(rnd()*10);
-      var dx = (rnd()-0.5)*1.6, dy = (rnd()-0.5)*1.6;
+    if(rnd() < (0.09 + p.inten*0.012)*T.branch){
+      var bx=x, by=y, bz=z, nb = 3 + Math.floor(rnd()*10);
+      var ddx=(rnd()-0.5)*1.6, ddy=(rnd()-0.5)*1.6;
       for(var j=0;j<nb;j++){
-        bx += dx*dz + (rnd()-0.5)*tort;
-        by += dy*dz + (rnd()-0.5)*tort;
-        bz += dz*(0.15 + 0.5*rnd());
-        segs.push({x:bx, y:by, z:bz, e:Math.exp(-bz/(H*0.55)) * (0.12+0.3*rnd()) * (1 - j/nb)});
+        bx += ddx*dz + (rnd()-0.5)*tort;
+        by += ddy*dz + (rnd()-0.5)*tort;
+        bz += dz*(0.15+0.5*rnd())*(1-hz) + dz*0.1;
+        segs.push({x:bx, y:by, z:Math.max(20,bz), e:Math.exp(-(i/n)/T.hDec)*(0.12+0.3*rnd())*(1-j/nb)});
       }
     }
   }
-  return segs;
+  return {segs:segs, ax:D, ay:0, az:baseZ};
 }
 
-/* ---------------------------------------------------------------------
-   Excitação: duas camadas somadas.
-
-   1) COERENTE  — as ondas N discretas de cada trecho do canal. Dão o
-      estalo, o "rip" e os tapas secos das ramificações próximas.
-   2) DIFUSA    — milhares de chegadas se sobrepõem e deixam de ser
-      eventos separados: viram ruído. Em vez de somar impulso por
-      impulso (o que soa "pipocado"), monto a densidade de energia
-      acústica ao longo do tempo e uso ruído modulado por sqrt(energia).
-
-   Sobre a soma passa um par de filtros variantes no tempo, guiados pela
-   distância média das contribuições que chegam naquele instante: o que
-   chega primeiro vem de perto (mais brilhante), o que chega depois vem
-   do alto do canal (mais grave e abafado). É esse deslize gradual de
-   brilho que faz o trovão soar vivo em vez de "ruído com envelope".
---------------------------------------------------------------------- */
-function buildExcitation(p, sr){
-  var rnd = makeRng(p.seed);
-  var segs = buildChannel(p, rnd);
-  var i, j, k, b, s;
-
+// mede o espalhamento temporal do canal
+function measure(segs){
   var rmin = Infinity, rmax = 0;
-  for(i=0;i<segs.length;i++){
-    s = segs[i];
+  for(var i=0;i<segs.length;i++){
+    var s = segs[i];
     s.r = Math.max(25, Math.sqrt(s.x*s.x + s.y*s.y + (s.z-EAR)*(s.z-EAR)));
     if(s.r < rmin) rmin = s.r;
     if(s.r > rmax) rmax = s.r;
   }
-  var spread = (rmax - rmin) / SPEED;
+  return {rmin:rmin, rmax:rmax, spread:(rmax-rmin)/SPEED};
+}
 
-  // descargas de retorno sucessivas (o "crack-crack" antes do ronco)
-  var nStroke = 1 + Math.floor(p.inten/3.2) + (rnd() < 0.4 ? 1 : 0);
+// escala o canal em torno do ponto de origem até bater a duração pedida
+function fitChannel(ch, targetSpread){
+  var m = measure(ch.segs), i, s, k, tot = 1;
+  for(var it=0; it<4; it++){
+    if(m.spread < 1e-3) break;
+    k = clamp(targetSpread/m.spread, 0.4, 3);
+    if(Math.abs(k-1) < 0.04) break;
+    if(tot*k > 6 || tot*k < 0.12) break;
+    tot *= k;
+    for(i=0;i<ch.segs.length;i++){
+      s = ch.segs[i];
+      s.x = ch.ax + (s.x-ch.ax)*k;
+      s.y = ch.ay + (s.y-ch.ay)*k;
+      s.z = Math.max(20, ch.az + (s.z-ch.az)*k);
+    }
+    m = measure(ch.segs);
+  }
+  return m;
+}
+
+/* ---------------------------------------------------------------------
+   Excitação — três camadas somadas:
+
+   1) COERENTE  ondas N discretas de cada trecho. O corpo do estrondo.
+   2) ESTALO    crepitação aguda do canal, só sobrevive perto (o ar come
+                o agudo em ~2 km). É o "rasgo" do raio do lado.
+   3) DIFUSA    quando milhares de chegadas se sobrepõem elas deixam de
+                ser eventos separados e viram ruído. Em vez de somar
+                impulso a impulso (soa "pipocado"), monto a densidade de
+                energia acústica no tempo e uso ruído modulado por
+                sqrt(energia).
+
+   Mais o PULSO DE PRESSÃO por descarga: a onda grave de sobrepressão
+   que só é forte bem perto — o estrondo propriamente dito.
+
+   Sobre tudo passa um par de filtros variantes no tempo guiados pela
+   distância média do que chega naquele instante: o começo vem do trecho
+   mais próximo (claro), o fim vem da ponta longe do canal (grave e
+   abafado). Esse deslize é o que faz soar vivo.
+--------------------------------------------------------------------- */
+function buildExcitation(p, sr){
+  var rnd = makeRng(p.seed);
+  var T = TYPES[p.type];
+  var ch = buildChannel(p, rnd);
+  var segs = ch.segs;
+  var m = fitChannel(ch, p.targetSpread);
+  var rmin = m.rmin, spread = m.spread;
+  var i, j, k, b, s;
+
+  // descargas de retorno sucessivas
+  var nStroke = clamp(Math.round((1 + p.inten/3.2)*T.str) + (rnd()<0.4?1:0), 1, 7);
   var strokes = [], tk = 0, gk = 1;
   for(i=0;i<nStroke;i++){
     strokes.push({t:tk, g:gk});
-    tk += 0.03 + rnd()*0.11;
-    gk *= 0.45 + rnd()*0.3;
+    tk += 0.03 + rnd()*0.13;
+    gk *= 0.42 + rnd()*0.34;
   }
   var strokeSpan = tk;
 
-  var BIN    = 0.002;                                  // 2 ms por bin
+  var BIN    = 0.002;
   var totalT = spread + strokeSpan + 0.45;
   var nB     = Math.ceil(totalT/BIN) + 8;
   var len    = Math.ceil(totalT*sr) + 256;
 
-  var E  = new Float64Array(nB);        // energia difusa por bin
-  var RW = new Float64Array(nB);        // energia × distância (p/ média)
+  var E  = new Float64Array(nB), RW = new Float64Array(nB);
   var L  = new Float32Array(len), R = new Float32Array(len);
 
-  var refD = 150;                       // distância de referência
-  // perto, as chegadas quase não se sobrepõem: o som é feito de estalos
-  // discretos. Longe, tudo vira um contínuo difuso.
+  var refD = 150;
+  // perto as chegadas quase não se sobrepõem: o som é feito de eventos
+  // discretos. Longe vira um contínuo difuso.
   var COH  = clamp(0.35 + 0.5/(1 + p.dist*2), 0.35, 0.78);
   var DIF2 = 1 - COH*COH;
 
+  // maior contribuição individual do canal — o pulso de pressão é
+  // dimensionado em cima dela, senão vira um soco isolado que engole
+  // o trovão inteiro
+  var aMax = 0;
+  for(i=0;i<segs.length;i++){
+    var am = segs[i].e*(refD/segs[i].r);
+    if(am > aMax) aMax = am;
+  }
+
   for(k=0;k<strokes.length;k++){
     var st = strokes[k];
+
+    // pulso de pressão grave (o "soco" do estrondo), só forte bem perto
+    var tauB = clamp(0.011*Math.pow(rmin/200, 0.12), 0.007, 0.028);
+    var aB   = T.blast*aMax*0.9*st.g*(0.6 + p.inten/14) / (1 + Math.pow(rmin/700, 1.3));
+    if(aB > 0.02){
+      addNWave(L, Math.round(st.t*sr), aB, Math.round(tauB*sr), rnd, 0.05);
+      addNWave(R, Math.round(st.t*sr), aB, Math.round(tauB*sr), rnd, 0.05);
+    }
+
     for(i=0;i<segs.length;i++){
       s = segs[i];
-      var a = s.e * st.g * (refD / s.r);
+      var a = s.e * st.g * (refD/s.r);
       if(a < 8e-5) continue;
 
-      // a onda de choque se alarga conforme percorre o ar
-      var tau = clamp(0.0009 * Math.pow(s.r/60, 0.42), 0.0006, 0.055);
+      // a onda de choque se alarga conforme viaja: pico de ~200 Hz perto
+      // e ~40 Hz no horizonte, que é o que se mede no trovão real
+      var tau = clamp(0.0028*Math.pow(s.r/100, 0.25)*T.tau, 0.0015, 0.045);
       var nw  = Math.max(2, Math.round(tau*sr));
       var tA  = (s.r - rmin)/SPEED + st.t + rnd()*0.0012;
-      var itd = clamp(s.y/s.r, -1, 1) * 0.00035;       // diferença interaural
+      var itd = clamp(s.y/s.r, -1, 1)*0.00035;
+      var iL  = Math.round((tA - itd*0.5)*sr), iR = Math.round((tA + itd*0.5)*sr);
 
-      addNWave(L, Math.round((tA - itd*0.5)*sr), a*COH, nw, rnd, 0.4);
-      addNWave(R, Math.round((tA + itd*0.5)*sr), a*COH, nw, rnd, 0.4);
+      addNWave(L, iL, a*COH, nw, rnd, 0.4);
+      addNWave(R, iR, a*COH, nw, rnd, 0.4);
 
-      // energia difusa espalhada ao longo do pulso e da sua cauda
+      // crepitação aguda: absorvida pelo ar em ~2 km
+      var cA = a*T.crack*Math.exp(-s.r/1400)*1.4;
+      if(cA > 2e-3){
+        addCrackle(L, iL, cA, rnd, sr);
+        addCrackle(R, iR, cA, rnd, sr);
+      }
+
+      // energia difusa espalhada ao longo do pulso e da cauda
       var eT = a*a*DIF2;
       var nb = clamp(Math.ceil(tau*3.5/BIN), 1, 120)|0;
       var b0 = Math.floor(tA/BIN), norm = 0, w;
@@ -386,130 +464,127 @@ function buildExcitation(p, sr){
     }
   }
 
-  // suaviza a densidade e extrai a distância média por instante
+  // densidade suavizada + distância média instantânea
   var Ebin = new Float64Array(nB), Rbin = new Float64Array(nB), lastR = rmin;
   for(b=0;b<nB;b++){
-    var acc = 0, accR = 0;
+    var acc=0, accR=0;
     for(j=-3;j<=3;j++){
-      var q = b + j;
-      if(q >= 0 && q < nB){ var wg = 1 - Math.abs(j)/4; acc += E[q]*wg; accR += RW[q]*wg; }
+      var q = b+j;
+      if(q>=0 && q<nB){ var wg = 1-Math.abs(j)/4; acc += E[q]*wg; accR += RW[q]*wg; }
     }
     Ebin[b] = acc;
     if(acc > 1e-13) lastR = accR/acc;
     Rbin[b] = lastR;
   }
 
-  /* -------- síntese amostra a amostra: ruído difuso + filtros TPT ------ */
+  /* --------- ruído difuso + filtros TPT variantes no tempo ------------ */
   var binPer = BIN*sr, UPD = 32, DIFG = 1.25;
   var bA1=0,bA2=0,bA3=0, lA1=0,lA2=0,lA3=0;
-  var n1L=0,n2L=0, n1R=0,n2R=0;                 // passa-faixa do ruído
-  var p1L=0,p2L=0, p1R=0,p2R=0;                 // passa-baixa 1
-  var q1L=0,q2L=0, q1R=0,q2R=0;                 // passa-baixa 2
-  var v1,v2,v3, xL,xR;
+  var n1L=0,n2L=0,n1R=0,n2R=0, p1L=0,p2L=0,p1R=0,p2R=0, q1L=0,q2L=0,q1R=0,q2R=0;
+  var v1,v2,v3,xL,xR;
 
   for(i=0;i<len;i++){
     if((i % UPD) === 0){
       b = (i/binPer)|0; if(b >= nB) b = nB-1;
       var rr   = Rbin[b];
-      var tauN = clamp(0.0009*Math.pow(rr/60, 0.42), 0.0006, 0.055);
-      var f0   = clamp(0.45/tauN, 28, 3000);                  // centro do ruído
-      var fc   = clamp(airCutoff(rr/1000), 110, sr*0.42);     // absorção do ar
+      var tauN = clamp(0.0028*Math.pow(rr/100, 0.25)*T.tau, 0.0015, 0.045);
+      var f0   = clamp(0.42/tauN, 38, 2400);
+      var fc   = clamp(airCutoff(rr/1000), 110, sr*0.42);
       var g1 = Math.tan(Math.PI*f0/sr), kB = 1/0.62;
-      bA1 = 1/(1 + g1*(g1+kB)); bA2 = g1*bA1; bA3 = g1*bA2;
+      bA1 = 1/(1+g1*(g1+kB)); bA2 = g1*bA1; bA3 = g1*bA2;
       var g2 = Math.tan(Math.PI*fc/sr), kL = 1/0.6;
-      lA1 = 1/(1 + g2*(g2+kL)); lA2 = g2*lA1; lA3 = g2*lA2;
+      lA1 = 1/(1+g2*(g2+kL)); lA2 = g2*lA1; lA3 = g2*lA2;
     }
 
-    var fb = i/binPer, b1 = fb|0, fr = fb - b1, b2 = b1 + 1;
+    var fb = i/binPer, b1 = fb|0, fr = fb-b1, b2 = b1+1;
     if(b1 >= nB) b1 = nB-1;
     if(b2 >= nB) b2 = nB-1;
-    var amp = Math.sqrt(Ebin[b1]*(1-fr) + Ebin[b2]*fr) * DIFG;
+    var amp = Math.sqrt(Ebin[b1]*(1-fr) + Ebin[b2]*fr)*DIFG;
 
-    // ruído -> passa-faixa (espectro da onda N) -> envelope de energia
     v3 = (rnd()*2-1) - n2L; v1 = bA1*n1L + bA2*v3; v2 = n2L + bA2*n1L + bA3*v3;
-    n1L = 2*v1 - n1L; n2L = 2*v2 - n2L;
-    xL = L[i] + v1*amp;
+    n1L = 2*v1-n1L; n2L = 2*v2-n2L; xL = L[i] + v1*amp;
 
     v3 = (rnd()*2-1) - n2R; v1 = bA1*n1R + bA2*v3; v2 = n2R + bA2*n1R + bA3*v3;
-    n1R = 2*v1 - n1R; n2R = 2*v2 - n2R;
-    xR = R[i] + v1*amp;
+    n1R = 2*v1-n1R; n2R = 2*v2-n2R; xR = R[i] + v1*amp;
 
-    // absorção do ar: duas passa-baixas em cascata, cortando com a distância
-    v3 = xL - p2L; v1 = lA1*p1L + lA2*v3; v2 = p2L + lA2*p1L + lA3*v3;
-    p1L = 2*v1 - p1L; p2L = 2*v2 - p2L; xL = v2;
-    v3 = xL - q2L; v1 = lA1*q1L + lA2*v3; v2 = q2L + lA2*q1L + lA3*v3;
-    q1L = 2*v1 - q1L; q2L = 2*v2 - q2L; L[i] = v2;
+    v3 = xL-p2L; v1 = lA1*p1L + lA2*v3; v2 = p2L + lA2*p1L + lA3*v3;
+    p1L = 2*v1-p1L; p2L = 2*v2-p2L; xL = v2;
+    v3 = xL-q2L; v1 = lA1*q1L + lA2*v3; v2 = q2L + lA2*q1L + lA3*v3;
+    q1L = 2*v1-q1L; q2L = 2*v2-q2L; L[i] = v2;
 
-    v3 = xR - p2R; v1 = lA1*p1R + lA2*v3; v2 = p2R + lA2*p1R + lA3*v3;
-    p1R = 2*v1 - p1R; p2R = 2*v2 - p2R; xR = v2;
-    v3 = xR - q2R; v1 = lA1*q1R + lA2*v3; v2 = q2R + lA2*q1R + lA3*v3;
-    q1R = 2*v1 - q1R; q2R = 2*v2 - q2R; R[i] = v2;
+    v3 = xR-p2R; v1 = lA1*p1R + lA2*v3; v2 = p2R + lA2*p1R + lA3*v3;
+    p1R = 2*v1-p1R; p2R = 2*v2-p2R; xR = v2;
+    v3 = xR-q2R; v1 = lA1*q1R + lA2*v3; v2 = q2R + lA2*q1R + lA3*v3;
+    q1R = 2*v1-q1R; q2R = 2*v2-q2R; R[i] = v2;
   }
 
-  // ondulação lenta do ronco (turbulência atmosférica no caminho)
   var depth = clamp(0.12 + p.dist*0.025, 0.12, 0.4);
   applyRoll(L, sr, rnd, depth);
   applyRoll(R, sr, rnd, depth);
 
-  return {L:L, R:R, len:len, spread:spread};
+  return {L:L, R:R, len:len, spread:spread, rmin:rmin};
 }
 
 function addNWave(buf, idx, amp, n, rnd, rough){
-  var i, j, v;
+  var i, j, v, lim = buf.length;
   if(idx < 0) idx = 0;
-  var lim = buf.length;
+  if(n < 2) n = 2;
   for(i=0;i<n;i++){
-    j = idx + i;
-    if(j >= lim) return;
-    v = 1 - 2*(i/n);                          // onda N: +A -> -A
-    v *= 1 + rough*(rnd()*2 - 1);             // turbulência
-    buf[j] += amp * v;
+    j = idx+i; if(j >= lim) return;
+    v = 1 - 2*(i/n);                       // onda N: +A -> -A
+    v *= 1 + rough*(rnd()*2-1);
+    buf[j] += amp*v;
   }
-  // cauda de espalhamento turbulento
   var m = (n*2.5)|0;
   for(i=0;i<m;i++){
-    j = idx + n + i;
-    if(j >= lim) return;
-    buf[j] += amp * 0.32 * (rnd()*2 - 1) * Math.exp(-3.2*i/m);
+    j = idx+n+i; if(j >= lim) return;
+    buf[j] += amp*0.32*(rnd()*2-1)*Math.exp(-3.2*i/m);
+  }
+}
+
+function addCrackle(buf, idx, amp, rnd, sr){
+  var n = 5 + (rnd()*8|0), lim = buf.length;
+  for(var k=0;k<n;k++){
+    var off = idx + ((rnd()*0.005*sr)|0);
+    var dl  = Math.max(4, (sr*0.00012*(1+rnd()*4))|0);
+    var a   = amp*(0.35+0.65*rnd());
+    for(var i=0;i<dl;i++){
+      var j = off+i; if(j >= lim) break;
+      buf[j] += a*(rnd()*2-1)*Math.exp(-4*i/dl);
+    }
   }
 }
 
 function applyRoll(buf, sr, rnd, depth){
-  // ruído filtrado ~1.5 Hz como envelope de modulação
-  var a = Math.exp(-2*Math.PI*1.6/sr);
-  var z1 = 0, z2 = 0, z3 = 0;
+  var a = Math.exp(-2*Math.PI*1.6/sr), z1=0,z2=0,z3=0;
   var onset = Math.round(sr*0.12);
   for(var i=0;i<buf.length;i++){
-    var w = rnd()*2 - 1;
-    z1 = a*z1 + (1-a)*w;
-    z2 = a*z2 + (1-a)*z1;
-    z3 = a*z3 + (1-a)*z2;
-    var m = 1 + depth * clamp(z3*22, -1.2, 1.2);
-    if(i < onset) m = lerp(1, m, i/onset);    // preserva o estalo inicial
-    buf[i] *= m;
+    var w = rnd()*2-1;
+    z1 = a*z1 + (1-a)*w; z2 = a*z2 + (1-a)*z1; z3 = a*z3 + (1-a)*z2;
+    var mo = 1 + depth*clamp(z3*22, -1.2, 1.2);
+    if(i < onset) mo = lerp(1, mo, i/onset);
+    buf[i] *= mo;
   }
 }
 
-/* --------------------------------------------- resposta ao impulso (eco) */
+function airCutoff(km){ return clamp(2600*Math.pow(Math.max(km,0.02), -0.62), 200, 17000); }
+
+/* ------------------------------------------- resposta ao impulso ----- */
 function buildIR(ctx, sr, T, dist, cut, seed){
   var n = Math.max(64, Math.ceil(T*sr));
   var buf = ctx.createBuffer(2, n, sr);
-  var fc = clamp(cut*0.7, 160, 3500);
-  var a  = Math.exp(-2*Math.PI*fc/sr);
+  var fc = clamp(cut*0.7, 160, 3500), a = Math.exp(-2*Math.PI*fc/sr);
   for(var ch=0; ch<2; ch++){
-    var rnd = makeRng(seed + ch*7919);
-    var d = buf.getChannelData(ch), z = 0, peak = 1e-6;
-    for(var i=0;i<n;i++){
+    var rnd = makeRng(seed + ch*7919), d = buf.getChannelData(ch), z=0, peak=1e-6, i;
+    for(i=0;i<n;i++){
       var t = i/sr;
-      z = a*z + (1-a)*(rnd()*2 - 1);
-      var env = Math.exp(-6.9*t/T) * (1 - i/n);
-      d[i] = z * env;
+      z = a*z + (1-a)*(rnd()*2-1);
+      d[i] = z*Math.exp(-6.9*t/T)*(1 - i/n);
     }
-    // reflexões discretas (terreno, encostas, base da nuvem)
     var refl = 3 + Math.floor(rnd()*4);
     for(var k=0;k<refl;k++){
-      var pos = Math.floor((0.015 + rnd()*Math.min(0.45, T*0.6)) * sr);
-      if(pos < n) d[pos] += (rnd()*2-1) * (0.35 + 0.4*rnd()) * (0.4 + 0.6*Math.min(1, dist/6));
+      var pos = Math.floor((0.015 + rnd()*Math.min(0.45, T*0.6))*sr);
+      if(pos < n) d[pos] += (rnd()*2-1)*(0.35+0.4*rnd())*(0.4+0.6*Math.min(1, dist/6));
     }
     for(i=0;i<n;i++) if(Math.abs(d[i]) > peak) peak = Math.abs(d[i]);
     for(i=0;i<n;i++) d[i] /= peak*3.2;
@@ -517,119 +592,104 @@ function buildIR(ctx, sr, T, dist, cut, seed){
   return buf;
 }
 
-/* ------------------------------------------------------ absorção do ar */
-function airCutoff(km){
-  return clamp(2600 * Math.pow(Math.max(km, 0.02), -0.62), 200, 17000);
-}
-
-/* ------------------------------------------------------- render offline */
+/* ------------------------------------------------------ render ------ */
 function renderOffline(off){
   return new Promise(function(res, rej){
     off.oncomplete = function(e){ res(e.renderedBuffer); };
-    try{
-      var pr = off.startRendering();
-      if(pr && pr.then) pr.then(res, rej);
-    }catch(err){ rej(err); }
+    try{ var pr = off.startRendering(); if(pr && pr.then) pr.then(res, rej); }
+    catch(err){ rej(err); }
   });
 }
 
 function makeThunder(params, sr){
+  var T = TYPES[params.type];
   var p = {
-    dist:   params.dist,
-    inten:  params.inten,
-    seed:   params.seed,
-    height: 0
+    dist: params.dist, inten: params.inten, seed: params.seed, type: params.type,
+    height: 0, targetSpread: Math.max(0.3, params.dur*0.82)
   };
-
-  // a duração pedida define o comprimento do canal (espalhamento temporal)
-  var D = p.dist * 1000;
-  var targetSpread = Math.max(0.3, params.dur * 0.75);
-  var H = Math.sqrt(Math.pow(targetSpread*SPEED + D, 2) - D*D);
+  var D = p.dist*1000;
+  var H = Math.sqrt(Math.pow(p.targetSpread*SPEED + D, 2) - D*D);
   p.height = clamp(H, 600, 14000);
 
   var ex = buildExcitation(p, sr);
-  var tail = clamp(0.25 + p.dist*0.16, 0.28, 3.0) * clamp(params.dur/8, 0.6, 1.6);
+  var tail = clamp(0.25 + p.dist*0.16, 0.28, 3.0)*clamp(params.dur/8, 0.6, 1.6)*T.wet;
   var total = Math.ceil(ex.len + (tail + 0.25)*sr);
-  total = Math.min(total, Math.ceil((params.dur + tail + 0.4) * sr));
+  total = Math.min(total, Math.ceil((params.dur + tail + 0.4)*sr));
 
   var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   var off = new OC(2, total, sr);
 
   var srcBuf = off.createBuffer(2, ex.len, sr);
-  srcBuf.copyToChannel ? srcBuf.copyToChannel(ex.L, 0) : srcBuf.getChannelData(0).set(ex.L);
-  srcBuf.copyToChannel ? srcBuf.copyToChannel(ex.R, 1) : srcBuf.getChannelData(1).set(ex.R);
+  if(srcBuf.copyToChannel){ srcBuf.copyToChannel(ex.L,0); srcBuf.copyToChannel(ex.R,1); }
+  else { srcBuf.getChannelData(0).set(ex.L); srcBuf.getChannelData(1).set(ex.R); }
 
-  var src = off.createBufferSource();
-  src.buffer = srcBuf;
+  var src = off.createBufferSource(); src.buffer = srcBuf;
 
   var hp = off.createBiquadFilter();
-  hp.type = "highpass"; hp.frequency.value = 22; hp.Q.value = 0.6;
-
-  // a absorção principal já foi aplicada amostra a amostra (variante no
-  // tempo); aqui fica só uma passa-baixa de segurança bem acima do corte
-  var cut = airCutoff(p.dist);
+  hp.type = "highpass"; hp.frequency.value = 24; hp.Q.value = 0.6;
   src.connect(hp);
-  var lp = off.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = clamp(cut*2.5, 200, sr*0.45);
-  lp.Q.value = 0.5;
-  hp.connect(lp);
-  var chain = lp;
 
-  // corpo grave: quanto mais longe, mais o ronco domina
+  // a absorção principal já foi aplicada amostra a amostra; aqui fica só
+  // uma passa-baixa de segurança bem acima do corte
+  var cut = airCutoff(p.dist);
+  var lp = off.createBiquadFilter();
+  lp.type = "lowpass"; lp.frequency.value = clamp(cut*2.5, 200, sr*0.45); lp.Q.value = 0.5;
+  hp.connect(lp);
+
+  // corpo grave: perto é peito (100–160 Hz), longe é subgrave (45–60 Hz)
   var shelf = off.createBiquadFilter();
   shelf.type = "lowshelf";
-  shelf.frequency.value = 130;
-  shelf.gain.value = clamp(1.5 + p.dist*0.55 + params.inten*0.25, 1, 11);
-  chain.connect(shelf);
+  shelf.frequency.value = clamp(165 - p.dist*9, 48, 165);
+  shelf.gain.value = clamp(3 + params.inten*0.5 + (p.dist<1.5 ? 4.5*(1.5-p.dist)*T.blast : p.dist*0.3), 2, 13);
+  lp.connect(shelf);
 
-  // seco + espalhamento
-  var wetAmt = clamp(0.12 + p.dist*0.085, 0.12, 0.8);
+  var wetAmt = clamp((0.12 + p.dist*0.085)*T.wet, 0.1, 0.85);
   var dry = off.createGain(); dry.gain.value = 1 - wetAmt*0.45;
   var wet = off.createGain(); wet.gain.value = wetAmt;
-  var conv = off.createConvolver();
-  conv.normalize = false;
+  var conv = off.createConvolver(); conv.normalize = false;
   conv.buffer = buildIR(off, sr, tail, p.dist, cut, p.seed);
 
-  shelf.connect(dry);
-  shelf.connect(conv); conv.connect(wet);
-
+  shelf.connect(dry); shelf.connect(conv); conv.connect(wet);
   var master = off.createGain(); master.gain.value = 1;
-  dry.connect(master); wet.connect(master);
-  master.connect(off.destination);
+  dry.connect(master); wet.connect(master); master.connect(off.destination);
 
   src.start(0);
-  return renderOffline(off).then(function(rendered){ return postProcess(rendered, sr, params.dur); });
+  return renderOffline(off).then(function(r){ return postProcess(r, sr, params.dur); });
 }
 
-/* --------------------------------------------- normalização + saturação */
+/* ------------------- normalização, harmônicos de grave e saturação ----
+   Alto-falante de celular não reproduz nada abaixo de ~400 Hz. O
+   excitador cria harmônicos do grave para o estrondo continuar sendo
+   sentido no celular, sem inchar no fone.                              */
 function postProcess(buf, sr, targetDur){
   var maxLen = Math.min(buf.length, Math.ceil(targetDur*sr));
-  var ch = buf.numberOfChannels, i, c;
-  var out = [];
-  var peak = 1e-6;
+  var nch = buf.numberOfChannels, out = [], peak = 1e-6, i, c;
 
-  for(c=0;c<ch;c++){
-    var src = buf.getChannelData(c);
+  for(c=0;c<nch;c++){
     var d = new Float32Array(maxLen);
-    d.set(src.subarray(0, maxLen));
+    d.set(buf.getChannelData(c).subarray(0, maxLen));
     out.push(d);
     for(i=0;i<maxLen;i++){ var a = Math.abs(d[i]); if(a > peak) peak = a; }
   }
 
-  var k = 1/peak;
-  var sat = Math.tanh(1.55);
-  var fadeIn  = Math.round(sr*0.002);
+  var k = 1/peak, sat = Math.tanh(1.55);
+  var aLP = Math.exp(-2*Math.PI*120/sr), aHP = Math.exp(-2*Math.PI*150/sr);
+  var fadeIn = Math.round(sr*0.002);
   var fadeOut = Math.max(Math.round(sr*0.28), Math.round(maxLen*0.06));
 
-  for(c=0;c<ch;c++){
-    var d2 = out[c];
+  for(c=0;c<nch;c++){
+    var x = out[c], z = 0, hz = 0;
     for(i=0;i<maxLen;i++){
-      var v = Math.tanh(d2[i]*k*1.55)/sat * 0.94;
+      var v = x[i]*k;
+      z  = aLP*z + (1-aLP)*v;                 // isola o grave
+      var h = Math.tanh(z*5);                 // gera harmônicos
+      hz = aHP*hz + (1-aHP)*h;
+      v += (h - hz)*0.32;                     // só a parte acima de 150 Hz
+      v = Math.tanh(v*1.55)/sat*0.94;
       if(i < fadeIn) v *= i/fadeIn;
       var rem = maxLen - i;
       if(rem < fadeOut){ var f = rem/fadeOut; v *= f*f; }
-      d2[i] = v;
+      x[i] = v;
     }
   }
   return {data:out, length:maxLen, sampleRate:sr};
@@ -638,39 +698,196 @@ function postProcess(buf, sr, targetDur){
 /* --------------------------------------------------------------- WAV */
 function toWav(pcm){
   var ch = pcm.data.length, n = pcm.length, sr = pcm.sampleRate;
-  var bytes = 44 + n*ch*2;
-  var ab = new ArrayBuffer(bytes), v = new DataView(ab), o = 0;
+  var bytes = 44 + n*ch*2, ab = new ArrayBuffer(bytes), v = new DataView(ab), o = 0;
   function s(str){ for(var i=0;i<str.length;i++) v.setUint8(o++, str.charCodeAt(i)); }
-  function u32(x){ v.setUint32(o, x, true); o += 4; }
-  function u16(x){ v.setUint16(o, x, true); o += 2; }
+  function u32(x){ v.setUint32(o,x,true); o+=4; }
+  function u16(x){ v.setUint16(o,x,true); o+=2; }
   s("RIFF"); u32(bytes-8); s("WAVE"); s("fmt "); u32(16); u16(1); u16(ch);
   u32(sr); u32(sr*ch*2); u16(ch*2); u16(16); s("data"); u32(n*ch*2);
-  for(var i=0;i<n;i++){
-    for(var c=0;c<ch;c++){
-      var x = clamp(pcm.data[c][i], -1, 1);
-      v.setInt16(o, x < 0 ? x*0x8000 : x*0x7FFF, true); o += 2;
-    }
+  for(var i=0;i<n;i++) for(var c=0;c<ch;c++){
+    var x = clamp(pcm.data[c][i], -1, 1);
+    v.setInt16(o, x<0 ? x*0x8000 : x*0x7FFF, true); o += 2;
   }
   return new Blob([ab], {type:"audio/wav"});
 }
 
+/* ================================================== AMBIENTE (chuva/vento)
+   Bancos de ruído filtrado com camadas independentes. A intensidade não
+   é só volume: chuva fraca é gota solta e chiado leve, chuva forte é
+   chiado denso mais o "ronco" grave da água batendo em tudo.         */
+function makeNoiseBuffer(ctx, secs, seed){
+  var sr = ctx.sampleRate, n = Math.floor(sr*secs), buf = ctx.createBuffer(2, n, sr);
+  for(var c=0;c<2;c++){
+    var d = buf.getChannelData(c), rnd = makeRng(seed + c*613);
+    for(var i=0;i<n;i++) d[i] = rnd()*2-1;
+  }
+  return buf;
+}
+
+function makeDropBuffer(ctx, secs, seed){
+  var sr = ctx.sampleRate, n = Math.floor(sr*secs), buf = ctx.createBuffer(2, n, sr);
+  for(var c=0;c<2;c++){
+    var d = buf.getChannelData(c), rnd = makeRng(seed + c*977);
+    var drops = Math.floor(secs*90);
+    for(var k=0;k<drops;k++){
+      var pos = Math.floor(rnd()*(n-2000));
+      var dl  = 120 + Math.floor(rnd()*500);
+      var amp = 0.25 + rnd()*0.75;
+      var f   = 900 + rnd()*2600;             // "ping" da gota
+      var w   = 2*Math.PI*f/sr, ph = rnd()*6.28;
+      for(var i=0;i<dl;i++){
+        var env = Math.exp(-7*i/dl);
+        d[pos+i] += amp*env*(0.6*Math.sin(w*i+ph) + 0.8*(rnd()*2-1));
+      }
+    }
+  }
+  return buf;
+}
+
+// curva aleatória lenta para rajadas e variação da chuva
+function makeLfoBuffer(ctx, secs, seed, hz){
+  var sr = ctx.sampleRate, n = Math.floor(sr*secs), buf = ctx.createBuffer(1, n, sr);
+  var d = buf.getChannelData(0), rnd = makeRng(seed);
+  var a = Math.exp(-2*Math.PI*hz/sr), z1=0,z2=0,z3=0, peak=1e-6, i;
+  for(i=0;i<n;i++){
+    var w = rnd()*2-1;
+    z1 = a*z1+(1-a)*w; z2 = a*z2+(1-a)*z1; z3 = a*z3+(1-a)*z2;
+    d[i] = z3;
+    if(Math.abs(z3) > peak) peak = Math.abs(z3);
+  }
+  for(i=0;i<n;i++) d[i] /= peak;
+  // costura o fim com o começo para o loop não estalar
+  var fade = Math.min(n>>2, Math.floor(sr*0.5));
+  for(i=0;i<fade;i++){ var t = i/fade; d[i] = lerp(d[n-fade+i], d[i], t); }
+  return buf;
+}
+
+function Ambient(ctx){
+  this.ctx = ctx;
+  this.rain = 0; this.wind = 0; this.vol = 1;
+  this.built = false;
+  this.nodes = null;
+}
+
+Ambient.prototype.build = function(){
+  if(this.built) return;
+  var ctx = this.ctx, t = ctx.currentTime;
+  var noise = makeNoiseBuffer(ctx, 6, 4242);
+  var drops = makeDropBuffer(ctx, 6, 8080);
+
+  var out = ctx.createGain(); out.gain.value = 0; out.connect(ctx.destination);
+
+  function src(buf, rate, off){
+    var s = ctx.createBufferSource();
+    s.buffer = buf; s.loop = true; s.playbackRate.value = rate;
+    s.start(t, off % buf.duration);
+    return s;
+  }
+  function filt(type, f, q){
+    var b = ctx.createBiquadFilter();
+    b.type = type; b.frequency.value = f; if(q) b.Q.value = q;
+    return b;
+  }
+  function gain(v){ var g = ctx.createGain(); g.gain.value = v; return g; }
+
+  // ---- chuva: chiado agudo, corpo, ronco grave e gotas soltas
+  var hissF = filt("highpass", 1400), hissL = filt("lowpass", 11000), hissG = gain(0);
+  src(noise, 1.0, 0).connect(hissF); hissF.connect(hissL); hissL.connect(hissG); hissG.connect(out);
+
+  var bodyF = filt("bandpass", 800, 0.5), bodyG = gain(0);
+  src(noise, 0.83, 2.1).connect(bodyF); bodyF.connect(bodyG); bodyG.connect(out);
+
+  var roarF = filt("lowpass", 320, 0.7), roarG = gain(0);
+  src(noise, 0.71, 4.3).connect(roarF); roarF.connect(roarG); roarG.connect(out);
+
+  var dropF = filt("bandpass", 2200, 0.9), dropG = gain(0);
+  src(drops, 1.0, 0).connect(dropF); dropF.connect(dropG); dropG.connect(out);
+  src(drops, 0.91, 3.0).connect(dropF);
+
+  // ---- vento: corpo grave varrido, banda média e assobio
+  var wLowF = filt("lowpass", 300, 0.8), wLowG = gain(0);
+  src(noise, 0.63, 1.7).connect(wLowF); wLowF.connect(wLowG); wLowG.connect(out);
+
+  var wMidF = filt("bandpass", 700, 1.1), wMidG = gain(0);
+  src(noise, 0.77, 3.9).connect(wMidF); wMidF.connect(wMidG); wMidG.connect(out);
+
+  var wHiF = filt("bandpass", 2100, 4.5), wHiG = gain(0);
+  src(noise, 1.07, 5.1).connect(wHiF); wHiF.connect(wHiG); wHiG.connect(out);
+
+  // ---- moduladores lentos (rajadas e variação da chuva)
+  var gustBuf = makeLfoBuffer(ctx, 24, 555, 0.09);
+  var rainBuf = makeLfoBuffer(ctx, 24, 991, 0.06);
+
+  var gust = src(gustBuf, 1, 0), gustD = gain(0);           // -> ganho do vento
+  gust.connect(gustD); gustD.connect(wLowG.gain); gustD.connect(wMidG.gain);
+  var gustF = gain(0);                                       // -> corte do vento
+  gust.connect(gustF); gustF.connect(wMidF.frequency); gustF.connect(wLowF.frequency);
+  var gustH = gain(0);
+  gust.connect(gustH); gustH.connect(wHiG.gain);
+
+  var rlfo = src(rainBuf, 1, 0), rainD = gain(0);
+  rlfo.connect(rainD); rainD.connect(hissG.gain); rainD.connect(bodyG.gain);
+
+  this.nodes = {out:out, hissF:hissF, hissG:hissG, bodyG:bodyG, roarG:roarG, dropG:dropG,
+                wLowG:wLowG, wMidG:wMidG, wHiG:wHiG, wMidF:wMidF, wLowF:wLowF,
+                gustD:gustD, gustF:gustF, gustH:gustH, rainD:rainD};
+  this.built = true;
+};
+
+Ambient.prototype.set = function(rain, wind, vol){
+  this.rain = rain; this.wind = wind; this.vol = vol;
+  if(!this.built){
+    if(rain <= 0 && wind <= 0) return;
+    this.build();
+  }
+  var n = this.nodes, ctx = this.ctx, t = ctx.currentTime, TC = 0.35;
+  var I = rain, W = wind;
+
+  function to(param, v){ param.setTargetAtTime(v, t, TC); }
+
+  // chuva: agudo cresce rápido, ronco grave só na chuva forte,
+  // gota solta só é audível na garoa (depois some no chiado)
+  to(n.hissG.gain, 0.85*Math.pow(I,1.25));
+  to(n.bodyG.gain, 0.55*Math.pow(I,1.05));
+  to(n.roarG.gain, 1.10*Math.pow(I,2.4));
+  to(n.dropG.gain, 0.75*Math.max(0, 1-I*1.15)*Math.min(1, I*5));
+  to(n.hissF.frequency, 1400 + W*900);       // vento leva a chuva junto
+  to(n.rainD.gain, 0.30*Math.pow(I,1.2)*(1 + W));
+
+  // vento
+  to(n.wLowG.gain, 0.55*Math.pow(W,1.25));
+  to(n.wMidG.gain, 0.32*Math.pow(W,1.6));
+  to(n.wHiG.gain,  0.13*Math.pow(W,3.2));
+  to(n.wLowF.frequency, 240 + W*260);
+  to(n.wMidF.frequency, 560 + W*700);
+  to(n.gustD.gain, 0.45*Math.pow(W,1.3));
+  to(n.gustF.gain, 320*W);
+  to(n.gustH.gain, 0.10*Math.pow(W,3));
+
+  var master = (I > 0 || W > 0) ? vol : 0;
+  n.out.gain.setTargetAtTime(master, t, 0.6);
+};
+
 /* ================================================================ APP */
-var ctx = null, current = null, pcm = null, buffer = null;
-var dirty = true, rendering = false, pendingTimer = null, playStart = 0, playDur = 0;
-var rainNodes = null, rainOn = false, flashOn = false;
+var ctx = null, amb = null, current = null, pcm = null, buffer = null;
+var dirty = true, rendering = null, pendingTimer = null, playStart = 0, playDur = 0;
+var flashOn = false, autoOn = false, varyOn = true, type = "estrondo";
+var autoTimer = null, autoNextAt = 0, autoTick = null, autoBase = null;
 
 var $ = function(id){ return document.getElementById(id); };
 var elDist=$("dist"), elInten=$("inten"), elDur=$("dur"), elVol=$("vol");
+var elRain=$("rain"), elWind=$("wind"), elMin=$("gapMin"), elMax=$("gapMax");
 var elState=$("state"), elFlash=$("flash"), elPlay=$("play"), elSeed=$("seed");
 var cv=$("wave"), cx=cv.getContext("2d");
 
 function params(){
   return {
-    dist:  sliderToDist(+elDist.value),
-    inten: +elInten.value,
-    dur:   +elDur.value/10,
-    vol:   +elVol.value/100,
-    seed:  (parseInt(elSeed.value,10) || 1) >>> 0
+    dist: sliderToDist(+elDist.value),
+    inten:+elInten.value,
+    dur:  +elDur.value/10,
+    vol:  +elVol.value/100,
+    seed: (parseInt(elSeed.value,10)||1)>>>0,
+    type: type
   };
 }
 
@@ -678,54 +895,62 @@ function ensureCtx(){
   if(!ctx){
     var AC = window.AudioContext || window.webkitAudioContext;
     ctx = new AC();
+    amb = new Ambient(ctx);
   }
   if(ctx.state === "suspended") return ctx.resume().then(function(){ return ctx; });
   return Promise.resolve(ctx);
 }
 
-/* ---------------------------------------------------------- interface */
-function trackFill(el){
-  var pc = (el.value - el.min) / (el.max - el.min) * 100;
-  el.style.setProperty("--p", pc + "%");
-}
+/* ------------------------------------------------------------ labels */
+function trackFill(el){ el.style.setProperty("--p", (el.value-el.min)/(el.max-el.min)*100+"%"); }
 
 function syncLabels(){
-  var p = params();
-  var delay = p.dist*1000/SPEED;
+  var p = params(), delay = p.dist*1000/SPEED;
 
   $("distV").textContent = fmtDist(p.dist);
-  $("distH").textContent = distLabel(p.dist) + " · o som chega " + delay.toFixed(1) + " s depois do clarão";
+  $("distH").textContent = distLabel(p.dist)+" · o som chega "+delay.toFixed(1)+" s depois do clarão";
 
-  $("intenV").textContent = p.inten + "/10";
-  $("intenH").textContent = p.inten <= 3 ? "descarga fraca, poucas ramificações"
-                          : p.inten <= 6 ? "descarga comum, canal bem ramificado"
-                          : p.inten <= 8 ? "descarga forte, várias descargas de retorno"
+  $("intenV").textContent = p.inten+"/10";
+  $("intenH").textContent = p.inten<=3 ? "descarga fraca, poucas ramificações"
+                          : p.inten<=6 ? "descarga comum, canal bem ramificado"
+                          : p.inten<=8 ? "descarga forte, várias descargas de retorno"
                           : "descarga extrema, estrondo saturado";
 
-  $("durV").textContent = p.dur.toFixed(1) + " s";
-  $("durH").textContent = "define o comprimento do canal: quanto mais longo, mais o ronco se estende";
+  $("durV").textContent = p.dur.toFixed(1)+" s";
+  $("durH").textContent = "comprimento do canal: quanto maior, mais o ronco se estende";
 
-  $("volV").textContent = Math.round(p.vol*100) + "%";
+  $("volV").textContent = Math.round(p.vol*100)+"%";
   $("volH").textContent = p.vol > 0.9 ? "cuidado com fones de ouvido" : "";
 
+  var I = +elRain.value/100, W = +elWind.value/100;
+  $("rainV").textContent = I===0 ? "desligada" : Math.round(I*100)+"%";
+  $("rainH").textContent = I===0 ? "" : I<0.2 ? "garoa: gotas soltas, quase sem chiado"
+                         : I<0.45 ? "chuva leve" : I<0.7 ? "chuva média, chiado denso"
+                         : I<0.9 ? "chuva forte, o grave da água já aparece" : "temporal";
+  $("windV").textContent = W===0 ? "desligado" : Math.round(W*100)+"%";
+  $("windH").textContent = W===0 ? "" : W<0.25 ? "brisa" : W<0.5 ? "vento constante"
+                         : W<0.75 ? "rajadas fortes" : "ventania, já assobia";
+
+  $("gapMinV").textContent = elMin.value+" s";
+  $("gapMaxV").textContent = elMax.value+" s";
+  $("gapH").textContent = autoOn ? "tocando sozinho entre "+elMin.value+" e "+elMax.value+" s"
+                                 : "quando ligado, um raio a cada "+elMin.value+"–"+elMax.value+" s";
+
   $("flashH").textContent = flashOn
-    ? "O clarão aparece e o som só chega " + delay.toFixed(1) + " s depois (tempo real)."
+    ? "O clarão aparece e o som chega "+delay.toFixed(1)+" s depois (tempo real)."
     : "Ative para ver o clarão e esperar o som chegar, como na vida real.";
 
-  [elDist, elInten, elDur, elVol].forEach(trackFill);
+  $("typeH").textContent = TYPES[type].desc;
+
+  [elDist,elInten,elDur,elVol,elRain,elWind,elMin,elMax].forEach(trackFill);
 }
 
-function setState(t, color){
-  elState.textContent = t;
-  elState.style.color = color || "var(--acc)";
-}
-
-function markDirty(){ dirty = true; drawWave(null); setState("recalcular"); }
+function setState(t, color){ elState.textContent = t; elState.style.color = color || "var(--acc)"; }
+function markDirty(){ dirty = true; }
 
 /* ------------------------------------------------------ visualização */
 function fitCanvas(){
-  var r = cv.getBoundingClientRect();
-  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var r = cv.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio||1, 2);
   cv.width = Math.max(1, Math.round(r.width*dpr));
   cv.height = Math.max(1, Math.round(r.height*dpr));
   drawWave(pcm);
@@ -734,63 +959,49 @@ function fitCanvas(){
 function drawWave(p, head){
   var w = cv.width, h = cv.height, mid = h/2;
   cx.clearRect(0,0,w,h);
-
-  cx.strokeStyle = "rgba(255,255,255,.08)";
-  cx.lineWidth = 1;
-  cx.beginPath(); cx.moveTo(0, mid); cx.lineTo(w, mid); cx.stroke();
+  cx.strokeStyle = "rgba(255,255,255,.08)"; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(0,mid); cx.lineTo(w,mid); cx.stroke();
 
   if(!p){
     cx.fillStyle = "rgba(255,255,255,.28)";
-    cx.font = (13*(window.devicePixelRatio||1)) + "px -apple-system,sans-serif";
+    cx.font = (13*(window.devicePixelRatio||1))+"px -apple-system,sans-serif";
     cx.textAlign = "center";
-    cx.fillText("toque em Tocar trovão", w/2, mid + 5);
+    cx.fillText("toque em Tocar trovão", w/2, mid+5);
     return;
   }
-
   var d = p.data[0], n = p.length, step = n/w;
   var grad = cx.createLinearGradient(0,0,w,0);
-  grad.addColorStop(0, "#8ed0ff");
-  grad.addColorStop(1, "#c9a7ff");
+  grad.addColorStop(0,"#8ed0ff"); grad.addColorStop(1,"#c9a7ff");
   cx.fillStyle = grad;
-
   for(var x=0;x<w;x++){
     var a = Math.floor(x*step), b = Math.min(n, Math.floor((x+1)*step)), mx = 0;
-    for(var i=a;i<b;i++){ var v = Math.abs(d[i]); if(v > mx) mx = v; }
+    for(var i=a;i<b;i++){ var v = Math.abs(d[i]); if(v>mx) mx = v; }
     var hh = Math.max(1, mx*mid*0.94);
     cx.fillRect(x, mid-hh, 1, hh*2);
   }
-
   if(head != null){
-    var px = clamp(head, 0, 1)*w;
     cx.fillStyle = "rgba(255,255,255,.85)";
-    cx.fillRect(px, 0, Math.max(1, window.devicePixelRatio||1), h);
+    cx.fillRect(clamp(head,0,1)*w, 0, Math.max(1, window.devicePixelRatio||1), h);
   }
 }
 
 function tickPlayhead(){
   if(!ctx || !playDur) return;
-  var t = (ctx.currentTime - playStart)/playDur;
-  if(t >= 0 && t <= 1){
-    drawWave(pcm, t);
-    requestAnimationFrame(tickPlayhead);
-  }else{
-    drawWave(pcm);
-  }
+  var t = (ctx.currentTime-playStart)/playDur;
+  if(t >= 0 && t <= 1){ drawWave(pcm, t); requestAnimationFrame(tickPlayhead); }
+  else drawWave(pcm);
 }
 
 /* ---------------------------------------------------------- render */
 function ensureRender(){
   if(!dirty && pcm) return Promise.resolve(pcm);
   if(rendering) return rendering;
-
   var p = params();
-  setState("gerando…", "var(--warn)");
+  setState("gerando…","var(--warn)");
   elPlay.disabled = true;
 
   rendering = ensureCtx().then(function(c){
-    return new Promise(function(res){ setTimeout(res, 16); }).then(function(){
-      return makeThunder(p, c.sampleRate);
-    });
+    return new Promise(function(res){ setTimeout(res,16); }).then(function(){ return makeThunder(p, c.sampleRate); });
   }).then(function(out){
     pcm = out;
     buffer = ctx.createBuffer(out.data.length, out.length, out.sampleRate);
@@ -798,208 +1009,241 @@ function ensureRender(){
       if(buffer.copyToChannel) buffer.copyToChannel(out.data[i], i);
       else buffer.getChannelData(i).set(out.data[i]);
     }
-    dirty = false; rendering = false;
-    elPlay.disabled = false;
-    setState((out.length/out.sampleRate).toFixed(1) + " s");
+    dirty = false; rendering = null; elPlay.disabled = false;
+    setState((out.length/out.sampleRate).toFixed(1)+" s");
     drawWave(pcm);
     return pcm;
   }).catch(function(err){
-    rendering = false; elPlay.disabled = false;
-    setState("erro no áudio", "#ff9a9a");
+    rendering = null; elPlay.disabled = false;
+    setState("erro no áudio","#ff9a9a");
     console.error(err);
     throw err;
   });
-
   return rendering;
 }
 
-/* -------------------------------------------------------- reprodução */
+/* ------------------------------------------------------ reprodução */
 function stopAll(){
-  if(pendingTimer){ clearTimeout(pendingTimer); pendingTimer = null; }
+  endWait();
   if(current){ try{ current.stop(); }catch(e){} current = null; }
-  playDur = 0;
-  drawWave(pcm);
-  setState(pcm ? (pcm.length/pcm.sampleRate).toFixed(1) + " s" : "pronto");
+  playDur = 0; drawWave(pcm);
+  setState(pcm ? (pcm.length/pcm.sampleRate).toFixed(1)+" s" : "pronto");
 }
 
 function startPlayback(){
   if(!buffer) return;
   if(current){ try{ current.stop(); }catch(e){} }
   var p = params();
-  var src = ctx.createBufferSource();
-  src.buffer = buffer;
+  var src = ctx.createBufferSource(); src.buffer = buffer;
   var g = ctx.createGain();
-  // atenuação suave com a distância, por cima do volume do usuário
-  g.gain.value = p.vol * (0.4 + 0.6/(1 + p.dist*0.35));
+  g.gain.value = p.vol*(0.4 + 0.6/(1 + p.dist*0.35));
   src.connect(g); g.connect(ctx.destination);
   src.start();
-  current = src;
-  playStart = ctx.currentTime;
-  playDur = buffer.duration;
+  current = src; playStart = ctx.currentTime; playDur = buffer.duration;
   setState("tocando");
+  elPlay.textContent = "\u26a1 Tocar trov\u00e3o";
   requestAnimationFrame(tickPlayhead);
   src.onended = function(){
-    if(current === src){ current = null; playDur = 0; drawWave(pcm); setState(buffer.duration.toFixed(1) + " s"); }
+    if(current === src){ current = null; playDur = 0; drawWave(pcm); refreshState(); }
   };
 }
 
+function refreshState(){
+  if(autoOn && autoNextAt){
+    var left = Math.max(0,(autoNextAt-Date.now())/1000);
+    setState("próximo em "+left.toFixed(0)+" s");
+  }else if(pcm) setState((pcm.length/pcm.sampleRate).toFixed(1)+" s");
+  else setState("pronto");
+}
+
 function doFlash(){
-  elFlash.classList.remove("go");
-  void elFlash.offsetWidth;
-  elFlash.classList.add("go");
+  elFlash.classList.remove("go"); void elFlash.offsetWidth; elFlash.classList.add("go");
+}
+
+var waitIv = null;
+
+function endWait(){
+  if(waitIv){ clearInterval(waitIv); waitIv = null; }
+  if(pendingTimer){ clearTimeout(pendingTimer); pendingTimer = null; }
+  elPlay.textContent = "\u26a1 Tocar trov\u00e3o";
 }
 
 function play(){
-  ensureCtx().then(ensureRender).then(function(){
-    if(pendingTimer){ clearTimeout(pendingTimer); pendingTimer = null; }
+  return ensureCtx().then(ensureRender).then(function(){
+    endWait();
     if(!flashOn){ startPlayback(); return; }
-
     doFlash();
-    var delay = params().dist*1000/SPEED;
-    var t0 = Date.now();
-    setState("clarão! " + delay.toFixed(1) + " s");
-    var iv = setInterval(function(){
-      var left = delay - (Date.now()-t0)/1000;
-      if(left <= 0){ clearInterval(iv); return; }
-      setState("som em " + left.toFixed(1) + " s", "var(--warn)");
-    }, 100);
-    pendingTimer = setTimeout(function(){
-      clearInterval(iv); pendingTimer = null; startPlayback();
-    }, delay*1000);
+    // a 20 km o som leva quase um minuto para chegar. Fica fiel, mas
+    // com uma saída: o botão vira "pular espera" enquanto conta.
+    var delay = params().dist*1000/SPEED, t0 = Date.now();
+    elPlay.textContent = "\u23ed Pular espera";
+    waitIv = setInterval(function(){
+      var left = delay-(Date.now()-t0)/1000;
+      if(left <= 0){ clearInterval(waitIv); waitIv = null; return; }
+      setState("som em "+left.toFixed(1)+" s","var(--warn)");
+    },100);
+    pendingTimer = setTimeout(function(){ endWait(); startPlayback(); }, delay*1000);
   }).catch(function(){});
 }
 
-/* -------------------------------------------------------------- chuva */
-function buildRainBuffer(c){
-  var sr = c.sampleRate, n = Math.floor(sr*5), buf = c.createBuffer(2, n, sr);
-  for(var ch=0; ch<2; ch++){
-    var d = buf.getChannelData(ch), rnd = makeRng(1234 + ch*99), z = 0;
-    var a = Math.exp(-2*Math.PI*5500/sr);
-    for(var i=0;i<n;i++){
-      z = a*z + (1-a)*(rnd()*2-1);
-      d[i] = (rnd()*2-1)*0.55 + z*0.9;
-    }
-    // gotas isoladas
-    var drops = Math.floor(n/900);
-    for(var k=0;k<drops;k++){
-      var pos = Math.floor(rnd()*(n-400));
-      var amp = 0.25 + rnd()*0.5, dl = 60 + Math.floor(rnd()*260);
-      for(var j=0;j<dl;j++) d[pos+j] += amp*(rnd()*2-1)*Math.exp(-5*j/dl);
-    }
+/* ------------------------------------------------------ modo automático */
+function varyParams(){
+  // sorteia uma variação em torno da base, como numa tempestade de
+  // verdade: nem todo raio cai à mesma distância. A variação é sempre
+  // relativa à base capturada ao ligar o automático — se fosse relativa
+  // ao valor atual, os sliders passeariam até os extremos.
+  if(!autoBase) return;
+  elDist.value  = clamp(Math.round(autoBase.dist + (Math.random()-0.5)*260), 0, 1000);
+  elInten.value = clamp(autoBase.inten + Math.round((Math.random()-0.5)*4), 1, 10);
+  elDur.value   = clamp(Math.round(autoBase.dur*(0.75 + Math.random()*0.6)), 15, 300);
+}
+
+function scheduleAuto(first){
+  if(autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
+  var mn = Math.min(+elMin.value, +elMax.value), mx = Math.max(+elMin.value, +elMax.value);
+  var wait = first ? 1.2 : mn + Math.random()*(mx-mn);
+  autoNextAt = Date.now() + wait*1000;
+  autoTimer = setTimeout(fireAuto, wait*1000);
+
+  // prepara o próximo raio durante a espera, para tocar na hora certa
+  elSeed.value = Math.floor(Math.random()*999999)+1;
+  if(varyOn) varyParams();
+  syncLabels(); markDirty();
+  ensureRender().catch(function(){});
+}
+
+function fireAuto(){
+  if(!autoOn) return;
+  play();
+  scheduleAuto(false);
+}
+
+function setAuto(on){
+  autoOn = on;
+  $("tAuto").classList.toggle("on", on);
+  $("tAuto").textContent = on ? "⏸ Parar automático" : "▶ Tocar sozinho";
+  if(on){
+    autoBase = {dist:+elDist.value, inten:+elInten.value, dur:+elDur.value};
+    ensureCtx().then(function(){ scheduleAuto(true); });
+    if(!autoTick) autoTick = setInterval(function(){
+      if(!autoOn) return;
+      if(!current && !pendingTimer) refreshState();
+    }, 500);
+  }else{
+    if(autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
+    if(autoTick){ clearInterval(autoTick); autoTick = null; }
+    autoNextAt = 0; autoBase = null; refreshState();
   }
-  return buf;
+  syncLabels();
 }
 
-function toggleRain(){
-  ensureCtx().then(function(c){
-    if(rainOn){
-      rainOn = false;
-      $("tRain").classList.remove("on");
-      if(rainNodes){
-        var g = rainNodes.gain, nodes = rainNodes;
-        g.gain.cancelScheduledValues(c.currentTime);
-        g.gain.setValueAtTime(g.gain.value, c.currentTime);
-        g.gain.linearRampToValueAtTime(0.0001, c.currentTime + 0.8);
-        setTimeout(function(){ nodes.srcs.forEach(function(s){ try{ s.stop(); }catch(e){} }); }, 900);
-        rainNodes = null;
-      }
-      return;
-    }
-    rainOn = true;
-    $("tRain").classList.add("on");
-    var buf = buildRainBuffer(c);
-    var hp = c.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=420;
-    var lp = c.createBiquadFilter(); lp.type="lowpass";  lp.frequency.value=7000;
-    var g  = c.createGain(); g.gain.value = 0.0001;
-    var srcs = [];
-    [1.0, 0.83].forEach(function(rate, i){
-      var s = c.createBufferSource();
-      s.buffer = buf; s.loop = true; s.playbackRate.value = rate;
-      var pan = c.createStereoPanner ? c.createStereoPanner() : null;
-      if(pan){ pan.pan.value = i ? 0.5 : -0.5; s.connect(pan); pan.connect(hp); }
-      else s.connect(hp);
-      s.start(c.currentTime + i*0.37);
-      srcs.push(s);
-    });
-    hp.connect(lp); lp.connect(g); g.connect(c.destination);
-    g.gain.linearRampToValueAtTime(0.12 * params().vol + 0.02, c.currentTime + 1.2);
-    rainNodes = {gain:g, srcs:srcs};
-  });
-}
-
-/* ---------------------------------------------------------- presets */
-var PRESETS = [
-  {n:"⚡ Estalo em cima", d:0.08, i:9,  du:7,  v:75},
-  {n:"🌩 Trovão perto",   d:0.7,  i:8,  du:9,  v:80},
-  {n:"🌫 Distância média",d:3,    i:7,  du:13, v:85},
-  {n:"🏔 Rugido distante",d:11,   i:6,  du:20, v:95},
-  {n:"🌊 Rolo longo",     d:5,    i:8,  du:26, v:90},
-  {n:"🍃 Ronco fraco",    d:8,    i:3,  du:12, v:85}
+/* ------------------------------------------------------------- cenas */
+var SCENES = [
+  {n:"💥 Caiu do lado",     t:"estrondo", d:0.09, i:10, du:8,  rain:35, wind:20},
+  {n:"⛈ Tempestade em cima",t:"multiplo", d:0.8,  i:9,  du:12, rain:80, wind:55},
+  {n:"🌧 Chuva e ronco",    t:"rolante",  d:4,    i:7,  du:18, rain:60, wind:25},
+  {n:"🏔 Longe no horizonte",t:"distante",d:14,   i:6,  du:22, rain:15, wind:10},
+  {n:"🌪 Frente de vento",  t:"rolante",  d:7,    i:8,  du:20, rain:45, wind:90}
 ];
 
-(function buildPresets(){
-  var box = $("presets");
-  PRESETS.forEach(function(p){
+(function buildChips(){
+  var box = $("scenes");
+  SCENES.forEach(function(s){
     var b = document.createElement("button");
-    b.className = "chip"; b.type = "button"; b.textContent = p.n;
+    b.className = "chip"; b.type = "button"; b.textContent = s.n;
     b.addEventListener("click", function(){
-      elDist.value  = distToSlider(p.d);
-      elInten.value = p.i;
-      elDur.value   = Math.round(p.du*10);
-      elVol.value   = p.v;
-      syncLabels(); markDirty();
-      play();
+      type = s.t;
+      elDist.value = distToSlider(s.d); elInten.value = s.i;
+      elDur.value = Math.round(s.du*10);
+      elRain.value = s.rain; elWind.value = s.wind;
+      paintTypes(); syncLabels(); markDirty(); applyAmbient(); play();
     });
     box.appendChild(b);
   });
+
+  var tb = $("types");
+  Object.keys(TYPES).forEach(function(kk){
+    var b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.dataset.k = kk; b.textContent = TYPES[kk].nome;
+    b.addEventListener("click", function(){
+      type = kk; paintTypes(); syncLabels(); markDirty(); play();
+    });
+    tb.appendChild(b);
+  });
 })();
+
+function paintTypes(){
+  var kids = $("types").children;
+  for(var i=0;i<kids.length;i++) kids[i].classList.toggle("on", kids[i].dataset.k === type);
+}
+
+/* ------------------------------------------------------------ ambiente */
+function applyAmbient(){
+  var I = +elRain.value/100, W = +elWind.value/100;
+  if(I <= 0 && W <= 0 && (!amb || !amb.built)) return;
+  ensureCtx().then(function(){ amb.set(I, W, +elVol.value/100); });
+}
 
 /* ------------------------------------------------------------ eventos */
 [elDist, elInten, elDur].forEach(function(el){
-  el.addEventListener("input", function(){ syncLabels(); trackFill(el); });
+  el.addEventListener("input", function(){ syncLabels(); });
   el.addEventListener("change", function(){ markDirty(); ensureRender().catch(function(){}); });
 });
-elVol.addEventListener("input", function(){
-  syncLabels();
-  if(rainNodes) rainNodes.gain.gain.value = 0.12*params().vol + 0.02;
+elVol.addEventListener("input", function(){ syncLabels(); applyAmbient(); });
+
+[elRain, elWind].forEach(function(el){
+  el.addEventListener("input", function(){ syncLabels(); applyAmbient(); });
+});
+[elMin, elMax].forEach(function(el){
+  el.addEventListener("input", function(){
+    if(+elMin.value > +elMax.value){
+      if(el === elMin) elMax.value = elMin.value; else elMin.value = elMax.value;
+    }
+    syncLabels();
+  });
 });
 
-elPlay.addEventListener("click", play);
-$("stop").addEventListener("click", stopAll);
-
+elPlay.addEventListener("click", function(){
+  if(pendingTimer){ endWait(); startPlayback(); return; }   // pular a espera
+  play();
+});
+$("stop").addEventListener("click", function(){ setAuto(false); stopAll(); });
 $("newBolt").addEventListener("click", function(){
-  elSeed.value = Math.floor(Math.random()*999999) + 1;
-  markDirty(); play();
+  elSeed.value = Math.floor(Math.random()*999999)+1; markDirty(); play();
 });
 $("reseed").addEventListener("click", function(){
-  elSeed.value = Math.floor(Math.random()*999999) + 1;
-  markDirty();
+  elSeed.value = Math.floor(Math.random()*999999)+1; markDirty();
 });
 elSeed.addEventListener("change", markDirty);
 
 $("tFlash").addEventListener("click", function(){
-  flashOn = !flashOn;
-  this.classList.toggle("on", flashOn);
-  syncLabels();
+  flashOn = !flashOn; this.classList.toggle("on", flashOn); syncLabels();
 });
-$("tRain").addEventListener("click", toggleRain);
+$("tAuto").addEventListener("click", function(){ setAuto(!autoOn); });
+$("tVary").addEventListener("click", function(){
+  varyOn = !varyOn; this.classList.toggle("on", varyOn);
+});
 
 $("dl").addEventListener("click", function(){
   ensureRender().then(function(p){
     var url = URL.createObjectURL(toWav(p));
     var a = document.createElement("a");
     a.href = url;
-    a.download = "trovao-" + fmtDist(params().dist).replace(/[ .]/g,"") + "-" + params().seed + ".wav";
+    a.download = "trovao-"+type+"-"+fmtDist(params().dist).replace(/[ .]/g,"")+"-"+params().seed+".wav";
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
   }).catch(function(){});
 });
 
 window.addEventListener("resize", fitCanvas);
-document.addEventListener("visibilitychange", function(){ if(document.hidden) stopAll(); });
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden){ setAuto(false); stopAll(); }
+});
 
-/* ------------------------------------------------------------- boot */
-elSeed.value = Math.floor(Math.random()*999999) + 1;
+/* --------------------------------------------------------------- boot */
+elSeed.value = Math.floor(Math.random()*999999)+1;
+$("tVary").classList.add("on");
+paintTypes();
 syncLabels();
 fitCanvas();
 setState("pronto");
